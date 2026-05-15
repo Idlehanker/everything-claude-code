@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code plugin** - a collection of production-ready agents, skills, hooks, commands, rules, and MCP configurations. The project provides battle-tested workflows for software development using Claude Code.
+This is a **Claude Code plugin** (ecc-universal) — a collection of production-ready agents, skills, hooks, commands, rules, and MCP configurations. The project provides battle-tested workflows for software development using Claude Code. Published as an npm package.
 
 ## Prompt Defense Baseline
 
@@ -18,56 +18,107 @@ This is a **Claude Code plugin** - a collection of production-ready agents, skil
 ## Running Tests
 
 ```bash
-# Run all tests
-node tests/run-all.js
+# Tests
+node tests/run-all.js                              # Run all tests
+node tests/lib/utils.test.js                        # Single test file
+node tests/hooks/hooks.test.js                      # Hook integration tests
 
-# Run individual test files
-node tests/lib/utils.test.js
-node tests/lib/package-manager.test.js
-node tests/hooks/hooks.test.js
+# Full CI suite (unicode checks + schema validation + tests)
+npm test
+
+# Linting
+npm run lint                                        # ESLint + markdownlint
+
+# Coverage (c8, 80% thresholds)
+npm run coverage
+
+# CI validation scripts (run individually)
+node scripts/ci/validate-agents.js
+node scripts/ci/validate-commands.js
+node scripts/ci/validate-skills.js
+node scripts/ci/validate-rules.js
+node scripts/ci/validate-hooks.js
+node scripts/ci/validate-install-manifests.js
+node scripts/ci/catalog.js --text
+node scripts/ci/check-unicode-safety.js
+node scripts/ci/validate-no-personal-paths.js
+
+# Other
+npm run harness:audit                               # Audit hook configs
+npm run observability:ready                         # Check observability setup
+node scripts/claw.js                                 # Plugin CLAW tool
+npm run catalog:check                                # Check skill/agent catalog is in sync
+npm run catalog:sync                                 # Regenerate catalogs
 ```
 
 ## Architecture
 
-The project is organized into several core components:
+The project is organized into these core directories:
 
-- **agents/** - Specialized subagents for delegation (planner, code-reviewer, tdd-guide, etc.)
-- **skills/** - Workflow definitions and domain knowledge (coding standards, patterns, testing)
-- **commands/** - Slash commands invoked by users (/tdd, /plan, /e2e, etc.)
-- **hooks/** - Trigger-based automations (session persistence, pre/post-tool hooks)
-- **rules/** - Always-follow guidelines (security, coding style, testing requirements)
-- **mcp-configs/** - MCP server configurations for external integrations
-- **scripts/** - Cross-platform Node.js utilities for hooks and setup
-- **tests/** - Test suite for scripts and utilities
+- **agents/** — Markdown with YAML frontmatter (`name`, `description`, `tools`, `model`). Subagent definitions for delegation (planner, code-reviewer, tdd-guide, etc.)
+- **skills/** — Domain knowledge and workflow guides organized by topic (one subdirectory per skill)
+- **commands/** — Slash command definitions (`description:` frontmatter line required). Invoked via `/command-name`
+- **hooks/** — Hook configurations (`hooks.json`) referencing scripts in `scripts/hooks/`
+- **rules/** — Language-specific coding style/security/testing guidelines (one subdirectory per language)
+- **scripts/** — Node.js utilities, hook handlers, CI validators, install logic
+- **scripts/lib/** — Shared helper modules (utils, package-manager, session-manager, install lifecycle, etc.)
+- **scripts/hooks/** — Individual hook handlers routed through `run-with-flags.js` wrapper
+- **scripts/ci/** — CI validation scripts (schemas, catalogs, unicode safety)
+- **tests/** — Mirrors `scripts/` structure. Test files named `*.test.js`
+- **schemas/** — JSON Schema files for hooks, install configs, state store, etc.
+- **mcp-configs/** — MCP server configuration presets
 
-## Key Commands
+### Plugin System
 
-- `/tdd` - Test-driven development workflow
-- `/plan` - Implementation planning
-- `/e2e` - Generate and run E2E tests
-- `/code-review` - Quality review
-- `/build-fix` - Fix build errors
-- `/learn` - Extract patterns from sessions
-- `/skill-create` - Generate skills from git history
+The plugin uses a bootstrap chain in `hooks.json`:
+1. `PreToolUse` hooks on `Bash` tool fire a dispatcher that resolves `CLAUDE_PLUGIN_ROOT` via `scripts/lib/utils.js`
+2. Hook scripts are wrapped through `scripts/hooks/run-with-flags.js` (enables `ECC_HOOK_PROFILE` and `ECC_DISABLED_HOOKS` runtime gating)
+3. `scripts/hooks/plugin-hook-bootstrap.js` loads the hook system
 
-## Development Notes
+### CLI Entry Points
 
-- Package manager detection: npm, pnpm, yarn, bun (configurable via `CLAUDE_PACKAGE_MANAGER` env var or project config)
-- Cross-platform: Windows, macOS, Linux support via Node.js scripts
-- Agent format: Markdown with YAML frontmatter (name, description, tools, model)
-- Skill format: Markdown with clear sections for when to use, how it works, examples
-- Skill placement: Curated in skills/; generated/imported under ~/.claude/skills/. See docs/SKILL-PLACEMENT-POLICY.md
-- Hook format: JSON with matcher conditions and command/notification hooks
+- `scripts/ecc.js` — `npx ecc <command>` CLI
+- `scripts/install-apply.js` — `npx ecc-install <profile>` installer
+- Install manifest profiles in `manifests/` define what gets installed
 
-## Contributing
+## Conventions
 
-Follow the formats in CONTRIBUTING.md:
-- Agents: Markdown with frontmatter (name, description, tools, model)
-- Skills: Clear sections (When to Use, How It Works, Examples)
-- Commands: Markdown with description frontmatter
-- Hooks: JSON with matcher and hooks array
+- **CommonJS only** — no ESM (`import`/`export`) unless file ends in `.mjs`
+- **No TypeScript** — plain `.js` throughout
+- **Prefer `const` over `let`; never `var`**
+- **File naming**: lowercase with hyphens (e.g. `python-reviewer.md`, `session-start.js`)
+- **Commits**: conventional commit prefixes (fix, feat, docs, test, refactor, chore)
+- **Hook scripts**: keep under 200 lines; extract helpers to `scripts/lib/`; must `exit 0` on non-critical errors
+- **Hook wrapper**: always use `scripts/hooks/run-with-flags.js` wrapper for hooks so runtime gating (`ECC_HOOK_PROFILE`, `ECC_DISABLED_HOOKS`) works
+- **Blocking hooks** (PreToolUse, stop): keep fast (<200ms) — no network calls
+- **Async hooks**: mark `"async": true` in settings.json with timeout ≤30s
+- **Agent format**: YAML frontmatter (`name`, `description`, `tools`, `model`) + body
+- **Skill format**: directories under `skills/` with clear sections (When to Use, How It Works, Examples)
+- **Command format**: `description:` frontmatter line required in commands/
+- **When spawning subagents**: pass conventions from the relevant skill into the agent's prompt
+- **Testing**: new `scripts/lib/` modules need matching `tests/lib/` tests; new hooks need integration tests in `tests/hooks/`
 
-File naming: lowercase with hyphens (e.g., `python-reviewer.md`, `tdd-workflow.md`)
+## File Format Examples
+
+```
+# agents/
+---
+name: planner
+description: Planning specialist for complex features
+tools: ["Read", "Grep", "Glob"]
+model: opus
+---
+
+# commands/
+---
+description: Create implementation plan, wait for confirmation
+---
+
+# skills/<name>/README.md
+## When to Use
+## How It Works
+## Examples
+```
 
 ## Skills
 
@@ -77,5 +128,6 @@ Use the following skills when working on related files:
 |---------|-------|
 | `README.md` | `/readme` |
 | `.github/workflows/*.yml` | `/ci-workflow` |
+| `rules/<language>/` | `/add-language-rules` |
 
 When spawning subagents, always pass conventions from the respective skill into the agent's prompt.
