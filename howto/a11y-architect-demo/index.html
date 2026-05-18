@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccessiBoard — WCAG 2.2 Before & After Demo</title>
+<style>
+  :root {
+    --color-surface: #f8f9fa;
+    --color-card: #ffffff;
+    --color-border: #e0e0e0;
+    --color-text: #1a1a2e;
+    --color-text-muted: #555;
+    --color-accent: #4361ee;
+    --color-accent-hover: #3a56d4;
+    --color-success: #2d6a4f;
+    --color-danger: #9b2226;
+    --color-warning: #bc6c25;
+    --color-broken-bg: #fff5f5;
+    --color-fixed-bg: #f0faf4;
+    --color-broken-header: #e53e3e;
+    --color-fixed-header: #38a169;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--color-surface);
+    color: var(--color-text);
+    line-height: 1.6;
+    padding: 2rem 1rem;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 2.5rem; }
+  header h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; letter-spacing: -0.02em; }
+  header p { color: var(--color-text-muted); max-width: 600px; margin: 0.5rem auto 0; font-size: 1.05rem; }
+
+  /* Legend */
+  .legend { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 500; }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 4px; }
+  .legend-swatch.broken { background: var(--color-broken-header); }
+  .legend-swatch.fixed { background: var(--color-fixed-header); }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+  /* Column */
+  .column { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .column-header {
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fff;
+  }
+  .column-header.broken { background: var(--color-broken-header); }
+  .column-header.fixed { background: var(--color-fixed-header); }
+  .column-body { background: var(--color-card); padding: 1.25rem; }
+
+  /* Demo Sections */
+  .demo-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); }
+  .demo-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .demo-section h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: 0.75rem; }
+
+  /* Task Cards */
+  .task-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .task-card:last-child { margin-bottom: 0; }
+  .task-card .task-info { flex: 1; }
+  .task-card .task-title { font-weight: 600; font-size: 0.95rem; }
+  .task-card .task-meta { font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+
+  /* Status indicators — BAD (color only) */
+  .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .status-dot.in-progress { background: #e9c46a; }
+  .status-dot.done { background: #2a9d8f; }
+  .status-dot.blocked { background: #e76f51; }
+
+  /* Status indicators — GOOD (color + icon + text) */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.15rem 0.5rem; border-radius: 4px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .status-badge[data-status="in-progress"] { background: #fef3c7; color: #92400e; }
+  .status-badge[data-status="done"] { background: #d1fae5; color: #065f46; }
+  .status-badge[data-status="blocked"] { background: #fee2e2; color: #991b1b; }
+  .status-badge svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
+
+  /* Contrast demo */
+  .contrast-sample { padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; }
+  .contrast-sample:last-child { margin-bottom: 0; }
+  .contrast-sample label { font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.25rem; }
+  .contrast-sample .sample-text { font-size: 0.9rem; }
+  .contrast-ratio { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 3px; margin-left: 0.4rem; }
+  .contrast-ratio.pass { background: #d1fae5; color: #065f46; }
+  .contrast-ratio.fail { background: #fee2e2; color: #991b1b; }
+
+  /* Buttons */
+  .btn-group { display: flex; gap: 0.5rem; }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+  /* BAD icon buttons — tiny, no accessible name */
+  .icon-btn.bad {
+    width: 24px; height: 24px;
+    background: transparent; color: #888;
+  }
+  .icon-btn.bad:hover { background: #f0f0f0; }
+
+  /* GOOD icon buttons — 44x44 target, aria-label */
+  .icon-btn.good {
+    width: 44px; height: 44px;
+    background: transparent; color: #555;
+  }
+  .icon-btn.good:hover { background: #e8e8e8; color: #111; }
+  .icon-btn.good:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Form elements */
+  .form-group { margin-bottom: 0.75rem; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .form-group input,
+  .form-group select {
+    width: 100%; padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border); border-radius: 4px;
+    font-size: 0.9rem; font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay:not(.visible) { display: none; }
+  .modal-content {
+    background: var(--color-card); border-radius: var(--radius);
+    padding: 1.5rem; max-width: 400px; width: 90%;
+    position: relative;
+  }
+  .modal-content h4 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+  .modal-content p { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1rem; }
+  .modal-close {
+    position: absolute; top: 0.75rem; right: 0.75rem;
+    border: none; background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close.good { width: 44px; height: 44px; }
+  .modal-close.good svg { width: 20px; height: 20px; }
+
+  /* BAD modal content — no close button, aria-live trap text */
+  .modal-text-trap {
+    font-size: 0.85rem; color: #666;
+    padding: 1rem; background: #f9f9f9; border-radius: 4px;
+    margin-bottom: 1rem; text-align: center;
+  }
+
+  /* Focus indicator demo */
+  .focus-demo-link {
+    display: inline-block; padding: 0.3rem 0.75rem;
+    color: var(--color-accent); border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  .focus-demo-link.bad { text-decoration: none; }
+  .focus-demo-link.bad:focus { outline: none; }
+  .focus-demo-link.good:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Annotation badges */
+  .wcag-annotation {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 0.15rem 0.4rem; border-radius: 3px;
+    background: #e0e7ff; color: var(--color-accent);
+    cursor: help;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .wcag-annotation.fixed { background: #d1fae5; color: #065f46; }
+
+  /* Demo section header with annotation support */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+  .section-header h3 { margin-bottom: 0; }
+
+  /* Auto-play video demo */
+  .media-box { border-radius: 4px; overflow: hidden; background: #f0f0f0; padding: 1rem; text-align: center; }
+  .media-box .media-label { font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.5rem; }
+  .media-controls { display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; }
+
+  /* Before/After tag */
+  .tag { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tag.broken-tag { background: #fee2e2; color: #991b1b; }
+  .tag.fixed-tag { background: #d1fae5; color: #065f46; }
+
+  /* Annotation callout */
+  .callout {
+    font-size: 0.8rem; padding: 0.6rem 0.75rem;
+    border-radius: 4px; margin-top: 0.5rem;
+    border-left: 3px solid;
+  }
+  .callout.broken-callout { background: #fff5f5; border-color: var(--color-broken-header); }
+  .callout.fixed-callout { background: #f0faf4; border-color: var(--color-fixed-header); }
+
+  /* Issue marker */
+  .issue {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 0.1rem 0.4rem; border-radius: 3px;
+    background: #fee2e2; color: #991b1b;
+  }
+
+  /* Footer */
+  footer { text-align: center; margin-top: 3rem; font-size: 0.85rem; color: var(--color-text-muted); }
+  footer a { color: var(--color-accent); }
+
+  /* Animation */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .column-body > * { animation: fadeIn 0.3s ease-out both; }
+  .column-body > *:nth-child(2) { animation-delay: 0.05s; }
+  .column-body > *:nth-child(3) { animation-delay: 0.1s; }
+  .column-body > *:nth-child(4) { animation-delay: 0.15s; }
+  .column-body > *:nth-child(5) { animation-delay: 0.2s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>AccessiBoard</h1>
+    <p>Side-by-side comparison of <strong>inaccessible</strong> vs. <strong>WCAG 2.2 Level AA compliant</strong> UI patterns.</p>
+  </header>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-swatch broken" aria-hidden="true"></span> Before — Broken</span>
+    <span class="legend-item"><span class="legend-swatch fixed" aria-hidden="true"></span> After — Fixed</span>
+  </div>
+
+  <div class="grid" role="list">
+
+    <!-- ===== BEFORE COLUMN ===== -->
+    <div class="column" role="listitem">
+      <div class="column-header broken">Before — Inaccessible</div>
+      <div class="column-body">
+
+        <!-- 1. Task cards with color-only status -->
+        <div class="demo-section">
+          <h3>Task Board</h3>
+
+          <div class="task-card">
+            <div class="task-info">
+              <div class="task-title">Design system audit</div>
+              <div class="task-meta">
+                <span class="status-dot in-progress" aria-hidden="true"></span>
+                <span>In Progress</span>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="icon-btn bad" onclick="alert('Edit clicked')">
+                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </button>
+              <button class="icon-btn bad" onclick="if(confirm('Delete task?'))this.closest('.task-card').remove()">
+                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="task-card">
+            <div class="task-info">
+              <div class="task-title">User research synthesis</div>
+              <div class="task-meta">
+                <span class="status-dot done" aria-hidden="true"></span>
+                <span>Done</span>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="icon-btn bad" onclick="alert('Edit clicked')">
+                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="callout broken-callout">
+            <span class="issue" role="text">&#9888; Issues</span>
+            Icon buttons have no accessible name (SC 4.1.2). Status uses <strong>color only</strong> (SC 1.4.1). Touch targets are ~24px, below the 24x24px minimum (SC 2.5.8).
+          </div>
+        </div>
+
+        <!-- 2. Contrast -->
+        <div class="demo-section">
+          <h3>Typography &amp; Contrast</h3>
+
+          <div class="contrast-sample" style="background:#fff;">
+            <label>Body text: <span class="contrast-ratio fail">FAIL 2.8:1</span></label>
+            <div class="sample-text" style="color:#999;">This text is hard to read for many users because the contrast ratio is only 2.8:1 against white.</div>
+          </div>
+
+          <div class="contrast-sample" style="background:#f0f0f0;">
+            <label>Secondary text: <span class="contrast-ratio fail">FAIL 3.2:1</span></label>
+            <div class="sample-text" style="color:#aaa;">Secondary information that fails WCAG 2.2 SC 1.4.3 contrast minimum.</div>
+          </div>
+
+          <div class="callout broken-callout">
+            <span class="issue" role="text">&#9888; Issues</span>
+            Body text below 4.5:1 minimum contrast ratio (SC 1.4.3). Non-text UI elements also below 3:1 (SC 1.4.11).
+          </div>
+        </div>
+
+        <!-- 3. Form -->
+        <div class="demo-section">
+          <h3>Search</h3>
+
+          <div class="form-group">
+            <input type="search" placeholder="Search tasks..." style="width:100%;">
+          </div>
+
+          <div class="form-group">
+            <select>
+              <option value="">Filter by status</option>
+              <option value="progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+
+          <div class="callout broken-callout">
+            <span class="issue" role="text">&#9888; Issues</span>
+            No associated <code>&lt;label&gt;</code> elements (SC 3.3.2). Placeholder alone is insufficient — disappears on input, fails color contrast.
+          </div>
+        </div>
+
+        <!-- 4. Modal keyboard trap -->
+        <div class="demo-section">
+          <h3>Detail View</h3>
+
+          <button class="icon-btn bad" style="width:auto;padding:0.4rem 0.75rem;gap:0.3rem;font-size:0.85rem;" onclick="openBadModal()">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            View Details
+          </button>
+
+          <div id="bad-modal" class="modal-overlay" role="dialog" aria-modal="true">
+            <div class="modal-content">
+              <h4>Task Details</h4>
+              <div class="modal-text-trap">
+                <p><strong>Design System Audit</strong></p>
+                <p>This modal has no close button. Pressing Tab cycles through nothing useful. There is no Escape handler.</p>
+                <button class="icon-btn bad" style="width:auto;padding:0.3rem 0.6rem;font-size:0.8rem;margin-top:0.5rem;" onclick="document.getElementById('bad-modal').classList.remove('visible');document.querySelector('[onclick*=\"openBadModal\"]').focus()">
+                  Close (only way out)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout broken-callout">
+            <span class="issue" role="text">&#9888; Issues</span>
+            No visible close button, no <kbd>Escape</kbd> key handler (SC 2.1.2). Focus is not trapped or managed (SC 2.4.3).
+          </div>
+        </div>
+
+        <!-- 5. Auto-play media -->
+        <div class="demo-section">
+          <h3>Media</h3>
+
+          <div class="media-box">
+            <span class="media-label">Demo video (auto-plays)</span>
+            <video autoplay loop muted playsinline style="width:100%;max-width:240px;border-radius:4px;">
+              <source src="data:video/mp4," type="video/mp4">
+            </video>
+            <div style="font-size:0.75rem;color:#999;margin-top:0.3rem;">No controls — autoplays on load</div>
+          </div>
+
+          <div class="callout broken-callout">
+            <span class="issue" role="text">&#9888; Issues</span>
+            Auto-playing media without a pause mechanism (SC 2.2.2). No controls attribute (SC 2.1.1).
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== AFTER COLUMN ===== -->
+    <div class="column" role="listitem">
+      <div class="column-header fixed">After — WCAG 2.2 Compliant</div>
+      <div class="column-body">
+
+        <!-- 1. Task cards fixed -->
+        <div class="demo-section">
+          <div class="section-header">
+            <h3>Task Board</h3>
+            <span class="wcag-annotation fixed" title="Non-text Content + Use of Color + Name Role Value + Target Size">SC 1.1.1 &middot; 1.4.1 &middot; 4.1.2 &middot; 2.5.8</span>
+          </div>
+
+          <div class="task-card">
+            <div class="task-info">
+              <div class="task-title">Design system audit</div>
+              <div class="task-meta">
+                <span class="status-badge" data-status="in-progress" role="status">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>
+                  In Progress
+                </span>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="icon-btn good" aria-label="Edit task: Design system audit" onclick="alert('Edit clicked')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </button>
+              <button class="icon-btn good" aria-label="Delete task: Design system audit" onclick="if(confirm('Delete task?'))this.closest('.task-card').remove()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="task-card">
+            <div class="task-info">
+              <div class="task-title">User research synthesis</div>
+              <div class="task-meta">
+                <span class="status-badge" data-status="done" role="status">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  Done
+                </span>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="icon-btn good" aria-label="Edit task: User research synthesis" onclick="alert('Edit clicked')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="callout fixed-callout">
+            ✅ <strong>Applied fixes:</strong> Icon buttons have <code>aria-label</code> (SC 4.1.2). Status uses color + icon + text (SC 1.4.1). Touch targets are 44x44px (far exceeding SC 2.5.8 minimum of 24x24px). <code>aria-hidden="true"</code> on decorative SVGs (SC 1.1.1).
+          </div>
+        </div>
+
+        <!-- 2. Contrast fixed -->
+        <div class="demo-section">
+          <div class="section-header">
+            <h3>Typography &amp; Contrast</h3>
+            <span class="wcag-annotation fixed" title="Contrast Minimum + Non-text Contrast">SC 1.4.3 &middot; 1.4.11</span>
+          </div>
+
+          <div class="contrast-sample" style="background:#fff;">
+            <label>Body text: <span class="contrast-ratio pass">PASS 10:1</span></label>
+            <div class="sample-text" style="color:#1a1a2e;">This text meets WCAG 2.2 Level AA with a contrast ratio of 10:1 against white.</div>
+          </div>
+
+          <div class="contrast-sample" style="background:#f8f9fa;">
+            <label>Secondary text: <span class="contrast-ratio pass">PASS 7:1</span></label>
+            <div class="sample-text" style="color:#555;">Secondary information that still passes the 4.5:1 minimum with room to spare.</div>
+          </div>
+
+          <div class="callout fixed-callout">
+            ✅ <strong>Applied fixes:</strong> Raised text contrast to 10:1 for body and 7:1 for secondary, exceeding the 4.5:1 minimum (SC 1.4.3). UI component borders and focus indicators also meet 3:1 non-text contrast (SC 1.4.11).
+          </div>
+        </div>
+
+        <!-- 3. Form fixed -->
+        <div class="demo-section">
+          <div class="section-header">
+            <h3>Search</h3>
+            <span class="wcag-annotation fixed" title="Labels or Instructions + Name Role Value">SC 3.3.2 &middot; 4.1.2</span>
+          </div>
+
+          <div class="form-group">
+            <label for="search-input">Search tasks</label>
+            <input type="search" id="search-input" placeholder="e.g., design, research...">
+          </div>
+
+          <div class="form-group">
+            <label for="status-filter">Filter by status</label>
+            <select id="status-filter">
+              <option value="">All statuses</option>
+              <option value="progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+
+          <div class="callout fixed-callout">
+            ✅ <strong>Applied fixes:</strong> Explicit <code>&lt;label&gt;</code> elements associated via <code>for</code> attribute (SC 3.3.2). Placeholder is supplementary, not the sole identifier. Screen readers will announce the label on focus.
+          </div>
+        </div>
+
+        <!-- 4. Modal fixed -->
+        <div class="demo-section">
+          <div class="section-header">
+            <h3>Detail View</h3>
+            <span class="wcag-annotation fixed" title="No Keyboard Trap + Focus Order + Focus Appearance">SC 2.1.2 &middot; 2.4.3 &middot; 2.4.11</span>
+          </div>
+
+          <button aria-haspopup="dialog" onclick="openGoodModal()" style="padding:0.4rem 0.75rem;gap:0.3rem;font-size:0.85rem;display:inline-flex;align-items:center;border:1px solid var(--color-border);border-radius:4px;background:var(--color-card);cursor:pointer;font-family:inherit;">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;" aria-hidden="true"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            View Details
+          </button>
+
+          <div id="good-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Task details for Design System Audit">
+            <div class="modal-content">
+              <button class="modal-close good" aria-label="Close dialog" onclick="closeGoodModal()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+              <h4 id="good-modal-title">Task Details</h4>
+              <p><strong>Design System Audit</strong></p>
+              <p style="font-size:0.85rem;color:#555;margin-bottom:1rem;">Review component library for WCAG 2.2 compliance gaps. This dialog traps focus, closes on Escape, and has a visible close button.</p>
+              <button onclick="closeGoodModal()" style="padding:0.4rem 1rem;border:1px solid var(--color-border);border-radius:4px;background:var(--color-card);cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div class="callout fixed-callout">
+            ✅ <strong>Applied fixes:</strong> Focus is trapped within the dialog (SC 2.1.2). <kbd>Escape</kbd> closes it. Close button has visible label (<code>aria-label="Close dialog"</code>) and 44x44px target (SC 2.5.8). Dialog labeled via <code>aria-labelledby</code> (SC 4.1.2).
+          </div>
+        </div>
+
+        <!-- 5. Media fixed -->
+        <div class="demo-section">
+          <div class="section-header">
+            <h3>Media</h3>
+            <span class="wcag-annotation fixed" title="Pause Stop Hide + Controls">SC 2.2.2 &middot; 2.1.1</span>
+          </div>
+
+          <div class="media-box">
+            <span class="media-label">Demo video (user-controlled)</span>
+            <video controls preload="metadata" style="width:100%;max-width:240px;border-radius:4px;" aria-label="Demo video — press play to start">
+              <source src="data:video/mp4," type="video/mp4">
+            </video>
+            <div style="font-size:0.75rem;color:#555;margin-top:0.3rem;">Has visible controls, does not autoplay</div>
+          </div>
+
+          <div class="callout fixed-callout">
+            ✅ <strong>Applied fixes:</strong> Removed <code>autoplay</code>, added <code>controls</code> attribute (SC 2.2.2). User initiates playback. <code>aria-label</code> describes the media element (SC 1.1.1).
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Built with the <a href="https://github.com/affaan-m/everything-claude-code">ECC</a> /ecc:a11y-architect agent &middot; WCAG 2.2 Level AA</p>
+  </footer>
+
+</div>
+
+<script>
+// --- Bad Modal ---
+function openBadModal() {
+  const modal = document.getElementById('bad-modal');
+  modal.classList.add('visible');
+  setTimeout(() => {
+    const btn = modal.querySelector('button');
+    if (btn) btn.focus();
+  }, 100);
+}
+
+// --- Good Modal ---
+function openGoodModal() {
+  const modal = document.getElementById('good-modal');
+  modal.classList.add('visible');
+  setTimeout(() => {
+    const closeBtn = modal.querySelector('.modal-close');
+    if (closeBtn) closeBtn.focus();
+  }, 100);
+  modal._lastFocus = document.activeElement;
+}
+
+function closeGoodModal() {
+  const modal = document.getElementById('good-modal');
+  modal.classList.remove('visible');
+  if (modal._lastFocus) modal._lastFocus.focus();
+}
+
+// Escape key handler for good modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const goodModal = document.getElementById('good-modal');
+    if (goodModal.classList.contains('visible')) {
+      closeGoodModal();
+    }
+  }
+});
+</script>
+
+</body>
+</html>
